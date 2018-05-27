@@ -12,7 +12,7 @@ Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible t
 In this project, we will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.
 
 
-# IData Preprocessing
+# Data Preprocessing
 
 ## Activate the libraries
 ```{r echo=TRUE}
@@ -115,6 +115,7 @@ test.transformed <- preproc.param %>% predict(testing)
 ## Make predictions
 ```{r echo=TRUE}
 predictions <- model %>% predict(test.transformed)
+predictions
 ```
 
 # Appendix: Figures
