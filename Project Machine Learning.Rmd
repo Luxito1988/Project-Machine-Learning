@@ -1,0 +1,130 @@
+---
+title: "Project Machine Learning"
+author: "Luis Valladares"
+date: "27 de mayo de 2018"
+output: html_document
+---
+
+# Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
+
+In this project, we will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.
+
+
+# IData Preprocessing
+
+## Activate the libraries
+```{r echo=TRUE}
+library(MASS)
+library(caret)
+library(stringr)
+library(ggplot2)
+```
+
+## Read the training file, specify the na.string option to assign NAs to blank fields
+```{r echo=TRUE}
+training <- read.csv("pml-training.csv", header = T,  na.string = c("", "NA"))
+```
+
+## Delete columns that contain only NA fields
+```{r echo=TRUE}
+training <- training[, colSums(is.na(training)) == 0]
+```
+
+## Delete columns 'X' and 'cvtd_timestamp'
+```{r echo=TRUE}
+training <- training[, names(training) != "X"]
+training <- training[, names(training) != "cvtd_timestamp"]
+```
+
+## Estimate preprocessing parameters
+```{r echo=TRUE}
+preproc.param <- training %>% preProcess(method = c("center", "scale"))
+```
+
+## Divide the training data set to train and test the model
+```{r echo=TRUE}
+inTrain <- createDataPartition(y = training$classe, p = 0.8, list = FALSE)
+training.train <- training[inTrain, ]
+training.test <- training[-inTrain, ]
+```
+
+## Transform the data using the estimated parameters
+```{r echo=TRUE}
+train.transformed <- preproc.param %>% predict(training.train)
+```
+
+
+# Data Modeling
+
+## Set the seed
+```{r echo=TRUE}
+set.seed(1234)
+```
+
+## Cross Validation
+```{r echo=TRUE}
+train.control <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+## QDA is recommended if the training set is very large, does not assumes the equality of variance/covariance. In other words, for QDA the covariance matrix can be different for each class
+```{r echo=TRUE}
+model <- train(
+      classe ~., data = train.transformed, method = "qda",
+      trControl = train.control
+)
+```
+
+## Transform the data of training.test using the estimated parameters
+```{r echo=TRUE}
+training.test.transformed <- preproc.param %>% predict(training.test)
+```
+
+## Make predictions
+```{r echo=TRUE}
+predicted.classes <- model %>% predict(training.test.transformed)
+```
+
+## Model accuracy
+```{r echo=TRUE}
+mean(predicted.classes == training.test.transformed$classe) #0.9612541
+```
+
+
+## Read the testing file, specify the na.string option to assign NAs to blank fields
+```{r echo=TRUE}
+testing <- read.csv("pml-testing.csv", header = T, na.string = c("", "NA"))
+```
+
+## Delete columns that contain only NA fields
+```{r echo=TRUE}
+testing <- testing[, colSums(is.na(testing)) == 0]
+testing <- testing[, names(testing) != "X"]
+testing <- testing[, names(testing) != "cvtd_timestamp"]
+testing <- testing[, names(testing) != "problem_id"]
+```
+
+## Transform the data of testing data set using the estimated parameters
+```{r echo=TRUE}
+test.transformed <- preproc.param %>% predict(testing)
+```
+
+# Predicting for Test Data Set
+
+## Make predictions
+```{r echo=TRUE}
+predictions <- model %>% predict(test.transformed)
+```
+
+# Appendix: Figures
+
+## Quadratic discriminant analysis - QDA
+```{r echo=TRUE}
+model
+```
+
+## Confusion Matrix and Statistics
+```{r echo=TRUE}
+confusionMatrix(predicted.classes, training.test.transformed$classe)
+```
